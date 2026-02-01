@@ -4,7 +4,7 @@
   "description": "A React-based Computer Graphics Algorithms Simulator",
   "private": true,
   "engines": {
-    "node": ">=18.x"
+    "node": "18.x"
   },
   "dependencies": {
     "react": "^18.2.0",
