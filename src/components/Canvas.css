@@ -1,0 +1,40 @@
+.canvas-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.drawing-canvas {
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: 
+    var(--shadow-xl),
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 0 60px -10px var(--color-primary-glow);
+  background: #ffffff;
+  transition: box-shadow var(--transition-base);
+}
+
+.drawing-canvas:hover {
+  box-shadow: 
+    var(--shadow-xl),
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 0 80px -10px var(--color-primary-glow);
+}
+
+.canvas-info {
+  display: flex;
+  gap: var(--space-md);
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.canvas-info span {
+  padding: var(--space-xs) var(--space-md);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
