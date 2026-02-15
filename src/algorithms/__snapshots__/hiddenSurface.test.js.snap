@@ -1,0 +1,20 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`hidden surface algorithms backFaceCull removes faces with dot(normal, viewDir) >= 0: backFaceCull kept-face map 1`] = `
+<pre
+  data-testid="result-map"
+>
+  Input: front, back
+Kept: front
+</pre>
+`;
+
+exports[`hidden surface algorithms paintersAlgorithm sorts faces by descending average Z: paintersAlgorithm depth-order map 1`] = `
+<pre
+  data-testid="result-map"
+>
+  1. near
+2. mid
+3. far
+</pre>
+`;

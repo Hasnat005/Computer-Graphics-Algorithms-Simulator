@@ -45,6 +45,19 @@ const NAV_ITEMS = [
     ),
     description: '8-way symmetry algorithm'
   },
+  {
+    id: 'polygon',
+    label: 'Polygon Fill',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <polygon points="5,18 12,5 19,18" />
+        <circle cx="5" cy="18" r="1.5" fill="currentColor" />
+        <circle cx="12" cy="5" r="1.5" fill="currentColor" />
+        <circle cx="19" cy="18" r="1.5" fill="currentColor" />
+      </svg>
+    ),
+    description: 'Scan-line, flood fill, boundary fill'
+  },
   { 
     id: 'simulation', 
     label: 'Simulation', 
@@ -92,7 +105,7 @@ function Sidebar() {
       {/* Navigation Items */}
       <nav className="sidebar-nav">
         <div className="sidebar-nav-label">Algorithms</div>
-        {NAV_ITEMS.slice(0, 3).map((item) => {
+        {NAV_ITEMS.slice(0, 4).map((item) => {
           const pointCount = getTotalPoints(item.id);
           const isActive = activeView === item.id;
           
@@ -119,7 +132,7 @@ function Sidebar() {
         <div className="sidebar-nav-divider" />
         
         <div className="sidebar-nav-label">Settings</div>
-        {NAV_ITEMS.slice(3).map((item) => {
+        {NAV_ITEMS.slice(4).map((item) => {
           const isActive = activeView === item.id;
           
           return (

@@ -10,7 +10,7 @@ import React, { createContext, useContext, useReducer, useCallback } from 'react
 // Initial state structure
 const initialState = {
   // Navigation
-  activeView: 'dda', // 'dda' | 'bresenham' | 'circle' | 'simulation'
+  activeView: 'dda', // 'dda' | 'bresenham' | 'circle' | 'polygon' | 'simulation'
   
   // Simulation controls (global)
   simulation: {
@@ -39,12 +39,22 @@ const initialState = {
       r: 15,
     },
   },
+
+  // Polygon construction state
+  polygon: {
+    vertices: [],
+    isClosed: false,
+  },
+
+  // 3D scene object storage
+  objects3D: [],
   
   // Drawing layers - each algorithm has its own layer
   layers: {
     dda: [],      // Array of {x, y} points
     bresenham: [],
     circle: [],
+    polygon: [],
   },
   
   // Animation state
@@ -56,6 +66,7 @@ const initialState = {
     dda: [],
     bresenham: [],
     circle: [],
+    polygon: [],
   },
 };
 
@@ -69,6 +80,12 @@ const ActionTypes = {
   SET_ANIMATING: 'SET_ANIMATING',
   ADD_HISTORY_ENTRY: 'ADD_HISTORY_ENTRY',
   CLEAR_HISTORY: 'CLEAR_HISTORY',
+  ADD_POLYGON_VERTEX: 'ADD_POLYGON_VERTEX',
+  CLEAR_POLYGON: 'CLEAR_POLYGON',
+  CLOSE_POLYGON: 'CLOSE_POLYGON',
+  SET_3D_OBJECTS: 'SET_3D_OBJECTS',
+  ADD_3D_OBJECT: 'ADD_3D_OBJECT',
+  CLEAR_3D_OBJECTS: 'CLEAR_3D_OBJECTS',
 };
 
 // Reducer function
@@ -146,6 +163,64 @@ function appReducer(state, action) {
           [action.payload]: [],
         },
       };
+
+    case ActionTypes.ADD_POLYGON_VERTEX:
+      return {
+        ...state,
+        polygon: {
+          ...state.polygon,
+          vertices: [...state.polygon.vertices, action.payload],
+          isClosed: false,
+        },
+      };
+
+    case ActionTypes.CLOSE_POLYGON:
+      if (state.polygon.vertices.length < 3) {
+        return state;
+      }
+
+      return {
+        ...state,
+        polygon: {
+          ...state.polygon,
+          isClosed: true,
+        },
+      };
+
+    case ActionTypes.CLEAR_POLYGON:
+      return {
+        ...state,
+        polygon: {
+          vertices: [],
+          isClosed: false,
+        },
+        layers: {
+          ...state.layers,
+          polygon: [],
+        },
+        history: {
+          ...state.history,
+          polygon: [],
+        },
+      };
+
+    case ActionTypes.SET_3D_OBJECTS:
+      return {
+        ...state,
+        objects3D: Array.isArray(action.payload) ? action.payload : state.objects3D,
+      };
+
+    case ActionTypes.ADD_3D_OBJECT:
+      return {
+        ...state,
+        objects3D: [...state.objects3D, action.payload],
+      };
+
+    case ActionTypes.CLEAR_3D_OBJECTS:
+      return {
+        ...state,
+        objects3D: [],
+      };
       
     default:
       return state;
@@ -203,6 +278,30 @@ export function AppProvider({ children }) {
         type: ActionTypes.ADD_HISTORY_ENTRY,
         payload: { algorithm, entry },
       });
+    }, []),
+
+    addPolygonVertex: useCallback((vertex) => {
+      dispatch({ type: ActionTypes.ADD_POLYGON_VERTEX, payload: vertex });
+    }, []),
+
+    closePolygon: useCallback(() => {
+      dispatch({ type: ActionTypes.CLOSE_POLYGON });
+    }, []),
+
+    clearPolygon: useCallback(() => {
+      dispatch({ type: ActionTypes.CLEAR_POLYGON });
+    }, []),
+
+    set3DObjects: useCallback((objects) => {
+      dispatch({ type: ActionTypes.SET_3D_OBJECTS, payload: objects });
+    }, []),
+
+    add3DObject: useCallback((object3D) => {
+      dispatch({ type: ActionTypes.ADD_3D_OBJECT, payload: object3D });
+    }, []),
+
+    clear3DObjects: useCallback(() => {
+      dispatch({ type: ActionTypes.CLEAR_3D_OBJECTS });
     }, []),
   };
   

@@ -21,6 +21,7 @@ const LAYER_COLORS = {
   dda: '#3b82f6',       // Blue
   bresenham: '#22c55e', // Green
   circle: '#a855f7',    // Purple
+  polygon: '#f59e0b',   // Amber
 };
 
 const Canvas = forwardRef(({ 
@@ -28,7 +29,8 @@ const Canvas = forwardRef(({
   height = 600, 
   pixelScale = 10,
   showGrid = true,
-  layers = { dda: [], bresenham: [], circle: [] }
+  layers = { dda: [], bresenham: [], circle: [], polygon: [] },
+  onCanvasClick,
 }, ref) => {
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
@@ -218,6 +220,31 @@ const Canvas = forwardRef(({
     
     redrawCanvas();
   };
+
+  /**
+   * Convert mouse click position to logical coordinates and emit callback
+   */
+  const handleCanvasClick = (event) => {
+    if (typeof onCanvasClick !== 'function') return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+
+    const offsetX = Math.floor(logicalWidth / 2);
+    const offsetY = Math.floor(logicalHeight / 2);
+
+    const gridX = Math.floor(mouseX / pixelScale);
+    const gridY = Math.floor(mouseY / pixelScale);
+
+    const x = gridX - offsetX;
+    const y = offsetY - gridY;
+
+    onCanvasClick({ x, y });
+  };
   
   // Redraw canvas when layers change
   useEffect(() => {
@@ -250,6 +277,7 @@ const Canvas = forwardRef(({
         width={width}
         height={height}
         className="drawing-canvas"
+        onClick={handleCanvasClick}
       />
       <div className="canvas-info">
         <span>Grid: {logicalWidth} × {logicalHeight}</span>

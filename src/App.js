@@ -3,8 +3,9 @@ import { AppProvider, useApp } from './context/AppContext';
 import Sidebar from './components/Sidebar';
 import AlgorithmPanel from './components/AlgorithmPanel';
 import SimulationPanel from './components/SimulationPanel';
+import PolygonInputPanel from './components/PolygonInputPanel';
 import Canvas from './components/Canvas';
-import { ddaLine, bresenhamLine, midpointCircle } from './algorithms';
+import { ddaLine, bresenhamLine, midpointCircle, scanLineFill, floodFill, boundaryFill } from './algorithms';
 import './App.css';
 
 /**
@@ -26,6 +27,64 @@ const LAYER_COLORS = {
   dda: '#3b82f6',
   bresenham: '#22c55e',
   circle: '#a855f7',
+  polygon: '#f59e0b',
+};
+
+const uniquePoints = (points) => {
+  const seen = new Set();
+  const result = [];
+
+  for (const point of points) {
+    const key = `${point.x},${point.y}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(point);
+    }
+  }
+
+  return result;
+};
+
+const buildPolygonBoundary = (vertices, isClosed) => {
+  if (!Array.isArray(vertices) || vertices.length === 0) {
+    return [];
+  }
+
+  if (vertices.length === 1) {
+    return [{ x: vertices[0].x, y: vertices[0].y }];
+  }
+
+  const segments = [];
+  for (let i = 0; i < vertices.length - 1; i++) {
+    const start = vertices[i];
+    const end = vertices[i + 1];
+    segments.push(...bresenhamLine(start.x, start.y, end.x, end.y));
+  }
+
+  if (isClosed && vertices.length > 2) {
+    const last = vertices[vertices.length - 1];
+    const first = vertices[0];
+    segments.push(...bresenhamLine(last.x, last.y, first.x, first.y));
+  }
+
+  return uniquePoints(segments);
+};
+
+const getPolygonSeed = (vertices) => {
+  if (!vertices.length) return { x: 0, y: 0 };
+
+  const sum = vertices.reduce(
+    (accumulator, vertex) => ({
+      x: accumulator.x + vertex.x,
+      y: accumulator.y + vertex.y,
+    }),
+    { x: 0, y: 0 }
+  );
+
+  return {
+    x: Math.round(sum.x / vertices.length),
+    y: Math.round(sum.y / vertices.length),
+  };
 };
 
 /**
@@ -35,6 +94,129 @@ const LAYER_COLORS = {
 function AppContent() {
   const { state, actions } = useApp();
   const canvasRef = useRef(null);
+
+  const updatePolygonLayer = useCallback((vertices, isClosed) => {
+    const boundaryPoints = buildPolygonBoundary(vertices, isClosed);
+    actions.setLayerPoints('polygon', boundaryPoints);
+  }, [actions]);
+
+  const handleCanvasClick = useCallback((point) => {
+    if (state.activeView !== 'polygon' || state.isAnimating || state.polygon.isClosed) {
+      return;
+    }
+
+    const nextVertex = { x: point.x, y: point.y };
+    const nextVertices = [...state.polygon.vertices, nextVertex];
+
+    actions.addPolygonVertex(nextVertex);
+    updatePolygonLayer(nextVertices, false);
+  }, [state.activeView, state.isAnimating, state.polygon, actions, updatePolygonLayer]);
+
+  const handleClosePolygon = useCallback(() => {
+    if (state.isAnimating || state.polygon.isClosed || state.polygon.vertices.length < 3) {
+      return;
+    }
+
+    actions.closePolygon();
+    updatePolygonLayer(state.polygon.vertices, true);
+  }, [state.isAnimating, state.polygon, actions, updatePolygonLayer]);
+
+  const handleClearPolygon = useCallback(() => {
+    if (state.isAnimating) return;
+    actions.clearPolygon();
+  }, [state.isAnimating, actions]);
+
+  const runPolygonAnimation = useCallback(async (algorithmName, points) => {
+    if (!canvasRef.current || !points.length) return;
+
+    actions.setAnimating(true, 'polygon');
+    await canvasRef.current.animatePoints(points, LAYER_COLORS.polygon, state.simulation.animationSpeed);
+    actions.setAnimating(false);
+
+    actions.addHistoryEntry('polygon', {
+      id: Date.now(),
+      params: algorithmName,
+      pointCount: points.length,
+    });
+  }, [actions, state.simulation.animationSpeed]);
+
+  const handleRunScanLine = useCallback(async () => {
+    if (state.isAnimating || !state.polygon.isClosed || state.polygon.vertices.length < 3) {
+      return;
+    }
+
+    const boundaryPoints = buildPolygonBoundary(state.polygon.vertices, true);
+    const fillPoints = scanLineFill(state.polygon.vertices);
+    const nextLayerPoints = uniquePoints([...boundaryPoints, ...fillPoints]);
+
+    actions.setLayerPoints('polygon', nextLayerPoints);
+    await runPolygonAnimation('Scan-Line Fill', fillPoints);
+  }, [state.isAnimating, state.polygon, actions, runPolygonAnimation]);
+
+  const handleRunFloodFill = useCallback(async () => {
+    if (state.isAnimating || !state.polygon.isClosed || state.polygon.vertices.length < 3) {
+      return;
+    }
+
+    const boundaryPoints = buildPolygonBoundary(state.polygon.vertices, true);
+    const boundarySet = new Set(boundaryPoints.map((point) => `${point.x},${point.y}`));
+    const filledSet = new Set();
+    const seed = getPolygonSeed(state.polygon.vertices);
+
+    const changes = await floodFill(seed, 'empty', 'filled', {
+      connectivity: 4,
+      speed: state.simulation.animationSpeed,
+      getPixelColor: (x, y) => {
+        const key = `${x},${y}`;
+        if (boundarySet.has(key)) return 'boundary';
+        if (filledSet.has(key)) return 'filled';
+        return 'empty';
+      },
+      setPixelColor: (x, y, color) => {
+        if (color === 'filled') {
+          filledSet.add(`${x},${y}`);
+        }
+      },
+    });
+
+    const fillPoints = changes.map((change) => ({ x: change.x, y: change.y }));
+    const nextLayerPoints = uniquePoints([...boundaryPoints, ...fillPoints]);
+    actions.setLayerPoints('polygon', nextLayerPoints);
+
+    await runPolygonAnimation('Flood Fill', fillPoints);
+  }, [state.isAnimating, state.polygon, state.simulation.animationSpeed, actions, runPolygonAnimation]);
+
+  const handleRunBoundaryFill = useCallback(async () => {
+    if (state.isAnimating || !state.polygon.isClosed || state.polygon.vertices.length < 3) {
+      return;
+    }
+
+    const boundaryPoints = buildPolygonBoundary(state.polygon.vertices, true);
+    const boundarySet = new Set(boundaryPoints.map((point) => `${point.x},${point.y}`));
+    const filledSet = new Set();
+    const seed = getPolygonSeed(state.polygon.vertices);
+
+    const changes = boundaryFill(seed, 'boundary', 'filled', {
+      connectivity: 4,
+      getPixelColor: (x, y) => {
+        const key = `${x},${y}`;
+        if (boundarySet.has(key)) return 'boundary';
+        if (filledSet.has(key)) return 'filled';
+        return 'empty';
+      },
+      setPixelColor: (x, y, color) => {
+        if (color === 'filled') {
+          filledSet.add(`${x},${y}`);
+        }
+      },
+    });
+
+    const fillPoints = changes.map((change) => ({ x: change.x, y: change.y }));
+    const nextLayerPoints = uniquePoints([...boundaryPoints, ...fillPoints]);
+    actions.setLayerPoints('polygon', nextLayerPoints);
+
+    await runPolygonAnimation('Boundary Fill', fillPoints);
+  }, [state.isAnimating, state.polygon, actions, runPolygonAnimation]);
   
   /**
    * Handle draw action for any algorithm
@@ -99,6 +281,16 @@ function AppContent() {
         return <AlgorithmPanel algorithm="bresenham" onDraw={handleDraw} />;
       case 'circle':
         return <AlgorithmPanel algorithm="circle" onDraw={handleDraw} />;
+      case 'polygon':
+        return (
+          <PolygonInputPanel
+            onClosePolygon={handleClosePolygon}
+            onClearPolygon={handleClearPolygon}
+            onRunScanLine={handleRunScanLine}
+            onFloodFill={handleRunFloodFill}
+            onBoundaryFill={handleRunBoundaryFill}
+          />
+        );
       case 'simulation':
         return <SimulationPanel />;
       default:
@@ -142,12 +334,19 @@ function AppContent() {
               pixelScale={10}
               showGrid={true}
               layers={state.layers}
+              onCanvasClick={handleCanvasClick}
             />
           </div>
           
           <aside className="control-section">
             <div className="control-header">
-              <h2>{state.activeView === 'simulation' ? 'Simulation Settings' : `${state.activeView.toUpperCase()} Algorithm`}</h2>
+              <h2>
+                {state.activeView === 'simulation'
+                  ? 'Simulation Settings'
+                  : state.activeView === 'polygon'
+                    ? 'Polygon Fill Algorithms'
+                    : `${state.activeView.toUpperCase()} Algorithm`}
+              </h2>
             </div>
             {renderActiveView()}
           </aside>

@@ -1,0 +1,46 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`boundaryFill produces expected boundary-fill map for enclosed interior: boundaryFill enclosed map 1`] = `
+<pre
+  data-testid="result-map"
+>
+  .....
+.###.
+.###.
+.....
+</pre>
+`;
+
+exports[`floodFill produces expected flood-fill map for a boxed region: floodFill boxed map 1`] = `
+<pre
+  data-testid="result-map"
+>
+  .....
+.###.
+.###.
+.....
+</pre>
+`;
+
+exports[`scanLineFill fills a concave polygon and matches expected result map: scanLineFill concave map 1`] = `
+<pre
+  data-testid="result-map"
+>
+  .....
+###..
+###..
+#####
+</pre>
+`;
+
+exports[`scanLineFill fills a convex polygon and matches expected result map: scanLineFill convex map 1`] = `
+<pre
+  data-testid="result-map"
+>
+  .......
+..###..
+#######
+.#####.
+.#####.
+</pre>
+`;
