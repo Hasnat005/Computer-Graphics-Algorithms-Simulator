@@ -22,6 +22,9 @@ const LAYER_COLORS = {
   bresenham: '#22c55e', // Green
   circle: '#a855f7',    // Purple
   polygon: '#f59e0b',   // Amber
+  transformations: '#0ea5e9',
+  clipping: '#10b981',
+  'hidden-surface': '#8b5cf6',
 };
 
 const Canvas = forwardRef(({ 
@@ -29,7 +32,15 @@ const Canvas = forwardRef(({
   height = 600, 
   pixelScale = 10,
   showGrid = true,
-  layers = { dda: [], bresenham: [], circle: [], polygon: [] },
+  layers = {
+    dda: [],
+    bresenham: [],
+    circle: [],
+    polygon: [],
+    transformations: [],
+    clipping: [],
+    'hidden-surface': [],
+  },
   onCanvasClick,
 }, ref) => {
   const canvasRef = useRef(null);

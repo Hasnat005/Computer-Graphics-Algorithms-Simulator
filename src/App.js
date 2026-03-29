@@ -4,6 +4,9 @@ import Sidebar from './components/Sidebar';
 import AlgorithmPanel from './components/AlgorithmPanel';
 import SimulationPanel from './components/SimulationPanel';
 import PolygonInputPanel from './components/PolygonInputPanel';
+import TransformationsPanel from './components/TransformationsPanel';
+import ClippingPanel from './components/ClippingPanel';
+import HiddenSurfacePanel from './components/HiddenSurfacePanel';
 import Canvas from './components/Canvas';
 import { ddaLine, bresenhamLine, midpointCircle, scanLineFill, floodFill, boundaryFill } from './algorithms';
 import './App.css';
@@ -28,6 +31,9 @@ const LAYER_COLORS = {
   bresenham: '#22c55e',
   circle: '#a855f7',
   polygon: '#f59e0b',
+  transformations: '#0ea5e9',
+  clipping: '#10b981',
+  'hidden-surface': '#8b5cf6',
 };
 
 const uniquePoints = (points) => {
@@ -217,6 +223,32 @@ function AppContent() {
 
     await runPolygonAnimation('Boundary Fill', fillPoints);
   }, [state.isAnimating, state.polygon, actions, runPolygonAnimation]);
+
+  const handleAnimateLayer = useCallback(async (layerName, points, paramsString) => {
+    if (!canvasRef.current || state.isAnimating || !Array.isArray(points)) return;
+
+    const normalizedPoints = points.map((point) => ({
+      x: Math.round(point.x),
+      y: Math.round(point.y),
+    }));
+
+    const color = LAYER_COLORS[layerName] || '#ffffff';
+
+    actions.setLayerPoints(layerName, []);
+    actions.setAnimating(true, layerName);
+
+    try {
+      await canvasRef.current.animatePoints(normalizedPoints, color, state.simulation.animationSpeed);
+      actions.setLayerPoints(layerName, normalizedPoints);
+      actions.addHistoryEntry(layerName, {
+        id: Date.now(),
+        params: paramsString,
+        pointCount: normalizedPoints.length,
+      });
+    } finally {
+      actions.setAnimating(false);
+    }
+  }, [state.isAnimating, state.simulation.animationSpeed, actions]);
   
   /**
    * Handle draw action for any algorithm
@@ -291,11 +323,28 @@ function AppContent() {
             onBoundaryFill={handleRunBoundaryFill}
           />
         );
+      case 'transformations':
+        return <TransformationsPanel onAnimateLayer={handleAnimateLayer} />;
+      case 'clipping':
+        return <ClippingPanel onAnimateLayer={handleAnimateLayer} />;
+      case 'hidden-surface':
+        return <HiddenSurfacePanel onAnimateLayer={handleAnimateLayer} />;
       case 'simulation':
         return <SimulationPanel />;
       default:
         return null;
     }
+  };
+
+  const viewTitles = {
+    dda: 'DDA Algorithm',
+    bresenham: 'Bresenham Algorithm',
+    circle: 'Circle Algorithm',
+    polygon: 'Polygon Fill Algorithms',
+    transformations: '2D Transformations',
+    clipping: 'Clipping Algorithms',
+    'hidden-surface': 'Hidden Surface Detection',
+    simulation: 'Simulation Settings',
   };
   
   return (
@@ -340,13 +389,7 @@ function AppContent() {
           
           <aside className="control-section">
             <div className="control-header">
-              <h2>
-                {state.activeView === 'simulation'
-                  ? 'Simulation Settings'
-                  : state.activeView === 'polygon'
-                    ? 'Polygon Fill Algorithms'
-                    : `${state.activeView.toUpperCase()} Algorithm`}
-              </h2>
+              <h2>{viewTitles[state.activeView] || 'Algorithm'}</h2>
             </div>
             {renderActiveView()}
           </aside>

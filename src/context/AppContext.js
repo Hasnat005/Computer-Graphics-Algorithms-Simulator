@@ -55,6 +55,9 @@ const initialState = {
     bresenham: [],
     circle: [],
     polygon: [],
+    transformations: [],
+    clipping: [],
+    'hidden-surface': [],
   },
   
   // Animation state
@@ -67,6 +70,9 @@ const initialState = {
     bresenham: [],
     circle: [],
     polygon: [],
+    transformations: [],
+    clipping: [],
+    'hidden-surface': [],
   },
 };
 
@@ -144,16 +150,28 @@ function appReducer(state, action) {
       };
       
     case ActionTypes.ADD_HISTORY_ENTRY:
+      {
+        const algorithm = action.payload?.algorithm;
+        const entry = action.payload?.entry;
+        const previousHistory = Array.isArray(state.history?.[algorithm])
+          ? state.history[algorithm]
+          : [];
+
+        if (!algorithm || !entry) {
+          return state;
+        }
+
       return {
         ...state,
         history: {
           ...state.history,
-          [action.payload.algorithm]: [
-            ...state.history[action.payload.algorithm],
-            action.payload.entry,
+          [algorithm]: [
+            ...previousHistory,
+            entry,
           ].slice(-5), // Keep last 5 entries per algorithm
         },
       };
+      }
       
     case ActionTypes.CLEAR_HISTORY:
       return {
@@ -328,11 +346,14 @@ export function useApp() {
  */
 export function useAlgorithm(algorithm) {
   const { state, actions } = useApp();
+  const params = state.algorithms?.[algorithm] || {};
+  const layer = state.layers?.[algorithm] || [];
+  const history = state.history?.[algorithm] || [];
   
   return {
-    params: state.algorithms[algorithm],
-    layer: state.layers[algorithm],
-    history: state.history[algorithm],
+    params,
+    layer,
+    history,
     isAnimating: state.isAnimating && state.currentAnimation === algorithm,
     setParams: (params) => actions.setAlgorithmParams(algorithm, params),
     setLayer: (points) => actions.setLayerPoints(algorithm, points),

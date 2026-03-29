@@ -3,3 +3,7 @@ export { default as Sidebar } from './Sidebar';
 export { default as AlgorithmPanel } from './AlgorithmPanel';
 export { default as SimulationPanel } from './SimulationPanel';
 export { default as PolygonInputPanel } from './PolygonInputPanel';
+export { default as AlgorithmCategoryPanel } from './AlgorithmCategoryPanel';
+export { default as TransformationsPanel } from './TransformationsPanel';
+export { default as ClippingPanel } from './ClippingPanel';
+export { default as HiddenSurfacePanel } from './HiddenSurfacePanel';

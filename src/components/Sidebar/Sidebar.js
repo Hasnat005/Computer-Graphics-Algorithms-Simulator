@@ -12,6 +12,7 @@ import './Sidebar.css';
 const NAV_ITEMS = [
   { 
     id: 'dda', 
+    group: 'core',
     label: 'DDA Line', 
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
   },
   { 
     id: 'bresenham', 
+    group: 'core',
     label: 'Bresenham Line', 
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -36,6 +38,7 @@ const NAV_ITEMS = [
   },
   { 
     id: 'circle', 
+    group: 'core',
     label: 'Midpoint Circle', 
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -47,6 +50,7 @@ const NAV_ITEMS = [
   },
   {
     id: 'polygon',
+    group: 'core',
     label: 'Polygon Fill',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -58,8 +62,47 @@ const NAV_ITEMS = [
     ),
     description: 'Scan-line, flood fill, boundary fill'
   },
+  {
+    id: 'transformations',
+    group: 'advanced',
+    label: '2D Transformations',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M4 8h8v8H4z" />
+        <path d="M12 12l8-8" />
+        <path d="M16 4h4v4" />
+      </svg>
+    ),
+    description: 'Translation, scaling, rotation, shearing, reflection'
+  },
+  {
+    id: 'clipping',
+    group: 'advanced',
+    label: 'Clipping',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="3" width="10" height="10" />
+        <path d="M9 9l12 12" />
+        <path d="M16 18h5v3" />
+      </svg>
+    ),
+    description: 'Cohen-Sutherland and Sutherland-Hodgman clipping'
+  },
+  {
+    id: 'hidden-surface',
+    group: 'advanced',
+    label: 'Hidden Surface',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M12 2l8 4v8l-8 4-8-4V6z" />
+        <path d="M12 2v8l8 4" />
+      </svg>
+    ),
+    description: 'Back-face culling, Z-buffer, Painter\'s algorithm'
+  },
   { 
     id: 'simulation', 
+    group: 'settings',
     label: 'Simulation', 
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -74,6 +117,9 @@ const NAV_ITEMS = [
 function Sidebar() {
   const { state, actions } = useApp();
   const { activeView, isAnimating, layers } = state;
+  const coreItems = NAV_ITEMS.filter((item) => item.group === 'core');
+  const advancedItems = NAV_ITEMS.filter((item) => item.group === 'advanced');
+  const settingItems = NAV_ITEMS.filter((item) => item.group === 'settings');
   
   const handleNavClick = (itemId) => {
     if (isAnimating) return;
@@ -104,11 +150,36 @@ function Sidebar() {
       
       {/* Navigation Items */}
       <nav className="sidebar-nav">
-        <div className="sidebar-nav-label">Algorithms</div>
-        {NAV_ITEMS.slice(0, 4).map((item) => {
+        <div className="sidebar-nav-label">Core</div>
+        {coreItems.map((item) => {
           const pointCount = getTotalPoints(item.id);
           const isActive = activeView === item.id;
           
+          return (
+            <button
+              key={item.id}
+              className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
+              onClick={() => handleNavClick(item.id)}
+              disabled={isAnimating}
+              title={item.description}
+            >
+              <span className="sidebar-nav-indicator" />
+              <span className="sidebar-nav-icon">{item.icon}</span>
+              <span className="sidebar-nav-content">
+                <span className="sidebar-nav-label-text">{item.label}</span>
+                {pointCount > 0 && (
+                  <span className="sidebar-nav-badge">{pointCount} pts</span>
+                )}
+              </span>
+            </button>
+          );
+        })}
+
+        <div className="sidebar-nav-label">Advanced</div>
+        {advancedItems.map((item) => {
+          const pointCount = getTotalPoints(item.id);
+          const isActive = activeView === item.id;
+
           return (
             <button
               key={item.id}
@@ -132,7 +203,7 @@ function Sidebar() {
         <div className="sidebar-nav-divider" />
         
         <div className="sidebar-nav-label">Settings</div>
-        {NAV_ITEMS.slice(4).map((item) => {
+        {settingItems.map((item) => {
           const isActive = activeView === item.id;
           
           return (

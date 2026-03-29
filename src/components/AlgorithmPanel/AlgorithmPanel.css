@@ -149,6 +149,7 @@
 }
 
 .input-field-input {
+  appearance: textfield;
   -moz-appearance: textfield;
 }
 
